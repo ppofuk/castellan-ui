@@ -17,6 +17,9 @@ import base64
 import logging
 
 from oslo_context import context
+from oslo_config import cfg
+
+from django.conf import settings
 
 from castellan.common import exception as castellan_exception
 from castellan.common.objects import key as key_type
@@ -24,6 +27,7 @@ from castellan.common.objects import opaque_data
 from castellan.common.objects import passphrase
 from castellan.common.objects import x_509
 from castellan import key_manager as key_manager_api
+from castellan import options
 
 from horizon import exceptions
 from horizon.utils.memoized import memoized_with_request
@@ -40,7 +44,13 @@ IMPORT_DATA_ATTRIBUTES = ['name', 'data']
 
 
 def key_manager():
-    return key_manager_api.API()
+    conf = cfg.ConfigOpts()
+    auth_endpoint = settings.OPENSTACK_KEYSTONE_URL
+    insecure = getattr(settings, 'OPENSTACK_SSL_NO_VERIFY', False)
+    options.set_defaults(conf, 
+                         auth_endpoint=auth_endpoint, 
+                         verify_ssl=not insecure)
+    return key_manager_api.API(conf)
 
 
 def get_auth_params_from_request(request):
